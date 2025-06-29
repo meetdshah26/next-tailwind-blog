@@ -4,6 +4,7 @@ import dataFromFile from "../data/posts.json";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation"; // ✅
 import SearchBar from "../components/SearchBar";
+import { useDebouncedCallback } from "use-debounce";
 
 let BASE_URL = "https://dummyjson.com/posts";
 const LIMIT = 10;
@@ -52,38 +53,24 @@ const Blog = () => {
       .finally(() => setLoading(false));
   }, [page, sortBy, order, query]);
 
-  // const handleSearch = (query: string) => {
-  //   if (!query) {
-  //     setFilteredPosts(posts);
-  //   } else {
-  //     setLoading(true);
-
-  //     fetch(`${url}/search?q=${query}&limit=${LIMIT}`)
-  //       .then((response) => response.json())
-  //       .then((data) => {
-  //         if (data.posts) {
-  //           setFilteredPosts(data.posts);
-  //           setTotal(data.total);
-  //         } else {
-  //           setFilteredPosts([]);
-  //         }
-  //       })
-  //       .catch(() => {
-  //         setFilteredPosts([]);
-  //       })
-  //       .finally(() => setLoading(false));
-  //   }
-  // };
+  const debouncedSearch = useDebouncedCallback((q: string) => {
+    router.push(`?page=1&q=${q}&sortBy=${sortBy}&order=${order}`);
+  }, 300); // 300ms debounce delay
 
   const handleSearch = (q: string) => {
-    router.push(`?page=1/search?q=${q}&sortBy=${sortBy}&order=${order}`);
+    debouncedSearch(q);
   };
+
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
     <>
       <div className="p-6 bg-gray-100 rounded-lg shadow-lg space-y-6">
-        <SearchBar onSearch={handleSearch} />
+        <SearchBar
+          onSearch={handleSearch}
+          initialQuery={query}
+          loading={loading}
+        />
 
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-semibold">Blog Posts</h1>
@@ -145,27 +132,6 @@ const Blog = () => {
             </Link>
           </div>
         ))}
-        {/* <div className="mx-6 my-10 mr-6 flex justify-between items-center">
-          <button
-            onClick={() => router.push(`?page=${page - 1}`)}
-            className={`px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition ${
-              page <= 1 ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={page <= 1}
-          >
-            Previous
-          </button>
-
-          <button
-            onClick={() => router.push(`?page=${page + 1}`)}
-            className={`px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition ${
-              page >= totalPages ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={page >= totalPages}
-          >
-            Next
-          </button>
-        </div> */}
 
         <div className="mx-6 my-10 flex justify-between items-center">
           <button

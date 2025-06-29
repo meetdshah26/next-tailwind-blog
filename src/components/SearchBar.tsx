@@ -1,34 +1,135 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { FiSearch, FiX, FiClock } from "react-icons/fi";
+import { ImSpinner2 } from "react-icons/im";
 
-const SearchBar = ({ onSearch }: { onSearch: (query: string) => void }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+type Props = {
+  onSearch: (query: string) => void;
+  initialQuery?: string;
+  loading?: boolean;
+};
+const HISTORY_KEY = "search_history";
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
+const SearchBar = ({ onSearch, initialQuery = "", loading = false }: Props) => {
+  const [searchQuery, setSearchQuery] = useState(initialQuery || "");
+  const [history, setHistory] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(HISTORY_KEY);
+    if (stored) {
+      setHistory(JSON.parse(stored));
+    }
+  }, []);
+
+  // Handle outside click to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
+        setShowHistory(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    setSearchQuery(initialQuery);
+  }, [initialQuery]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setShowHistory(true);
+    if (value.length >= 3 || value.length === 0) {
+      onSearch(value); // Trigger debounced search
+      updateHistory(value);
+    }
   };
 
-  const handleSearch = () => {
-    // Trigger the parent component's search function with the current query
-    onSearch(searchQuery);
+  // Update localStorage
+  const updateHistory = (query: string) => {
+    if (!query || query.length < 3) return;
+    const updated = [query, ...history.filter((item) => item !== query)].slice(
+      0,
+      5
+    ); // top 5
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+    setHistory(updated);
+  };
+
+  const handleClear = () => {
+    setSearchQuery("");
+    onSearch("");
+  };
+
+  const handleSelectHistory = (query: string) => {
+    setSearchQuery(query);
+    onSearch(query);
+    setShowHistory(false);
+  };
+
+  const handleClearHistory = () => {
+    localStorage.removeItem(HISTORY_KEY);
+    setHistory([]);
   };
 
   return (
-    <div className="flex items-center justify-center space-x-2 mb-6">
+    <div ref={wrapperRef} className="relative w-full max-w-xl mx-auto mb-6">
+      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+        <FiSearch size={20} />
+      </div>
+
       <input
         type="text"
         value={searchQuery}
-        onChange={handleInputChange}
+        onChange={handleChange}
+        onFocus={() => setShowHistory(true)}
         placeholder="Search..."
-        className="border-2 border-gray-300 rounded-lg p-2 w-80 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full p-2 pl-10 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
-      <button
-        onClick={handleSearch}
-        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
-      >
-        Search
-      </button>
+
+      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+        {loading ? (
+          <ImSpinner2 className="animate-spin text-blue-500" size={20} />
+        ) : (
+          searchQuery && (
+            <button
+              onClick={handleClear}
+              className="text-gray-500 hover:text-red-500 transition-colors duration-200"
+            >
+              <FiX size={20} />
+            </button>
+          )
+        )}
+      </div>
+
+      {/* Dropdown history */}
+      {showHistory && history.length > 0 && (
+        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+          {history.map((item, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleSelectHistory(item)}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+            >
+              <FiClock />
+              <span>{item}</span>
+            </button>
+          ))}
+          <button
+            onClick={handleClearHistory}
+            className="w-full text-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-t"
+          >
+            Clear Search History
+          </button>
+        </div>
+      )}
     </div>
   );
 };
