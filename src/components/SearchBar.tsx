@@ -91,7 +91,7 @@ const SearchBar = ({ onSearch, initialQuery = "", loading = false }: Props) => {
         onChange={handleChange}
         onFocus={() => setShowHistory(true)}
         placeholder="Search..."
-        className="w-full p-2 pl-10 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full p-2 pl-10 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
       />
 
       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -116,7 +116,7 @@ const SearchBar = ({ onSearch, initialQuery = "", loading = false }: Props) => {
             <button
               key={idx}
               onClick={() => handleSelectHistory(item)}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2 text-black"
             >
               <FiClock />
               <span>{item}</span>

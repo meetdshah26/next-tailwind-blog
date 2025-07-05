@@ -23,7 +23,7 @@ const Blog = () => {
   const searchParams = useSearchParams();
 
   const page = parseInt(searchParams.get("page") || "1");
-  const sortBy = searchParams.get("sortBy") || "title";
+  const sortBy = searchParams.get("sortBy") || "";
   const order = searchParams.get("order") || "asc";
   const query = searchParams.get("q") || "";
   const skip = (page - 1) * LIMIT;
@@ -106,7 +106,7 @@ const Blog = () => {
           >
             <Link href={`/blog/${post.id}`} className="block">
               <h2 className="text-2xl font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors duration-300">
-                {post.id}
+                {post.userId}
               </h2>
               <h3 className="text-xl font-semibold text-gray-800 hover:text-blue-500 transition-colors duration-300">
                 {post.title}
