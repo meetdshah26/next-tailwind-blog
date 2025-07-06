@@ -1,23 +1,67 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { Edit, MessageCircle, ThumbsUp } from "lucide-react";
 import dataFromFile from "../data/posts.json";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation"; // ✅
-import SearchBar from "../components/SearchBar";
+import { useSearchParams, useRouter } from "next/navigation";
+import SearchBar from "./SearchBar";
 import { useDebouncedCallback } from "use-debounce";
+import { BASE_URL } from "@/utils/constants";
 
-let BASE_URL = "https://dummyjson.com/posts";
 const LIMIT = 10;
 // Todo Example of CSR
 
-// after search pagination not working
-//  in first page next come on the place of previous
+type BlogPost = {
+  id: number;
+  title: string;
+  body: string;
+  tags: string[];
+  userId: number;
+  reactions?: {
+    likes: number;
+    dislikes: number;
+  };
+  views?: number;
+};
 
 const Blog = () => {
-  const [posts, setPosts] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
+  // const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
+  const [visibleComments, setVisibleComments] = useState<{
+    [postId: number]: boolean;
+  }>({});
+  const [comments, setComments] = useState<{ [postId: number]: any[] }>({});
+  const [commentLoading, setCommentLoading] = useState<{
+    [postId: number]: boolean;
+  }>({});
+
+  const toggleComments = async (postId: number) => {
+    const isVisible = visibleComments[postId]; // Get current state of comment
+    setVisibleComments((prev) => ({
+      // ...prev,
+      [postId]: !isVisible,
+    })); // Toggle visibility
+
+    if (!isVisible && !comments[postId]) {
+      setCommentLoading((prev) => ({ ...prev, [postId]: true }));
+
+      try {
+        const res = await fetch(`${BASE_URL}/${postId}/comments`);
+        const data = await res.json();
+
+        setComments((prev) => ({
+          ...prev,
+          [postId]: data.comments || [],
+        }));
+      } catch (err) {
+        console.error("Failed to load comments", err);
+      } finally {
+        setCommentLoading((prev) => ({ ...prev, [postId]: false }));
+      }
+    }
+  };
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -39,16 +83,19 @@ const Blog = () => {
       .then((response) => response.json())
       .then((data) => {
         if (data.posts) {
-          setPosts(data.posts);
-          setTotal(data.total);
+          // setPosts(data.posts);
           setFilteredPosts(data.posts);
+          setTotal(data.total ?? 0);
         } else {
-          setPosts(data);
+          // setPosts([]);
           setFilteredPosts([]);
+          setTotal(0);
         }
       })
       .catch(() => {
-        setPosts(dataFromFile);
+        // setPosts(dataFromFile);
+        setFilteredPosts(dataFromFile);
+        setTotal(dataFromFile.length);
       })
       .finally(() => setLoading(false));
   }, [page, sortBy, order, query]);
@@ -61,7 +108,7 @@ const Blog = () => {
     debouncedSearch(q);
   };
 
-  const totalPages = Math.ceil(total / LIMIT);
+  const totalPages = total ? Math.ceil(total / LIMIT) : 1;
 
   return (
     <>
@@ -93,7 +140,12 @@ const Blog = () => {
         </div>
 
         {loading && (
-          <p className="text-center text-xl text-gray-600">Loading...</p>
+          <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-500 mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+            </div>
+          </div>
         )}
         {filteredPosts.length === 0 && !loading && (
           <p className="text-center text-xl text-gray-600">No posts found</p>
@@ -111,9 +163,7 @@ const Blog = () => {
               <h3 className="text-xl font-semibold text-gray-800 hover:text-blue-500 transition-colors duration-300">
                 {post.title}
               </h3>
-              <p className="pt-2 text-gray-700 text-base">
-                {post.body || post.content}
-              </p>
+              <p className="pt-2 text-gray-700 text-base">{post.body}</p>
               <p className="text-sm text-gray-500 mt-2">
                 <strong>Tag:</strong>{" "}
                 {post.tags ? post.tags.join(", ") : "No tags"}
@@ -130,6 +180,52 @@ const Blog = () => {
                 <strong>userId:</strong> {post.userId ? post.userId : 0}
               </p>
             </Link>
+
+            <div className="flex gap-4 mt-4">
+              <Link
+                href={`/blog/edit/${post.id}`}
+                className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:cursor-pointer font-medium transition"
+              >
+                <Edit size={18} />
+                Edit
+              </Link>
+              <button
+                onClick={() => toggleComments(post.id)}
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:cursor-pointer font-medium transition"
+              >
+                <MessageCircle size={18} />
+                {visibleComments[post.id] ? "Hide Comments" : "Show Comments"}
+              </button>
+            </div>
+
+            {visibleComments[post.id] && (
+              <div className="mt-4 border-t pt-3 space-y-3">
+                {commentLoading[post.id] ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-blue-500 rounded-full"></div>
+                    Loading comments...
+                  </div>
+                ) : comments[post.id]?.length ? (
+                  comments[post.id].map((comment: any) => (
+                    <div
+                      key={comment.id}
+                      className="text-sm text-gray-700 bg-gray-100 p-2 rounded"
+                    >
+                      <p className="font-semibold text-gray-900">
+                        {comment.user?.fullName || "User"}
+                      </p>
+                      <p>{comment.body}</p>
+                       <p className="flex items-center gap-1">
+                        <ThumbsUp size={16} />
+                        {comment.likes}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">No comments found.</p>
+                )}
+              </div>
+            )}
           </div>
         ))}
 

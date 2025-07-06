@@ -1,100 +1,103 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { usePaginatedPosts } from "../../../hooks/usePaginatedPosts";
+import SearchBar from "../../../components/SearchBar";
+import { useDebouncedCallback } from "use-debounce";
 import { useParams } from "next/navigation";
-import Link from "next/link";
-
-type Post = {
-  id: number;
-  title: string;
-  body: string;
-};
 
 export default function TagDetailPage() {
-  const { tag } = useParams<{ tag: string }>();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const params = useParams();
+  const tag = params?.tag as string;
 
-  useEffect(() => {
-    async function fetchPosts() {
-      try {
-        const res = await fetch(`https://dummyjson.com/posts/tag/${tag}`);
-        if (!res.ok) {
-          throw new Error(`Failed to fetch posts for tag "${tag}"`);
-        }
+  const {
+    posts,
+    page,
+    query,
+    sortBy,
+    order,
+    totalPages,
+    loading,
+    updateParams,
+  } = usePaginatedPosts({
+    baseUrl: `https://dummyjson.com/posts/tag/${tag}`,
+    limit: 10,
+    isSearchLocal: true,
+    isSortLocal: true,
+  });
 
-        const data = await res.json();
-        setPosts(data.posts || []);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (tag) {
-      fetchPosts();
-    }
-  }, [tag]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-500 mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Loading posts...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-8 text-red-600 text-center font-semibold">
-        Error: {error}
-      </div>
-    );
-  }
-
-  if (!posts.length) {
-    return (
-      <div className="p-8 text-gray-600 text-center">
-        No posts found for tag "
-        <span className="font-medium text-black">{tag}</span>".
-      </div>
-    );
-  }
+  const handleSearch = useDebouncedCallback((q: string) => {
+    updateParams({ page: "1", q });
+  }, 300);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Back to Tags */}
-        <Link
-          href="/tag-list"
-          className="inline-block mb-6 text-indigo-600 hover:text-indigo-800 font-medium transition"
+    <div className="max-w-4xl mx-auto py-10">
+      <h1 className="text-3xl font-bold mb-6">
+        Posts tagged with <span className="text-indigo-500">{tag}</span>
+      </h1>
+
+      <SearchBar
+        onSearch={handleSearch}
+        initialQuery={query}
+        loading={loading}
+      />
+
+      {/* Sort Dropdown */}
+      <div className="flex justify-end mb-4">
+        <label htmlFor="sort" className="sr-only">Sort posts</label>
+        <select
+          className="border px-4 py-2 rounded"
+          value={`${sortBy}:${order}`}
+          onChange={(e) => {
+            const [sb, o] = e.target.value.split(":");
+            updateParams({ page: "1", sortBy: sb, order: o });
+          }}
         >
-          ← Back to Tags
-        </Link>
+          <option value="title:asc">Title A-Z</option>
+          <option value="title:desc">Title Z-A</option>
+          <option value="userId:asc">User ID ↑</option>
+          <option value="userId:desc">User ID ↓</option>
+        </select>
+      </div>
 
-        {/* Page Title */}
-        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-8 border-b pb-2">
-          Posts tagged with <span className="text-indigo-600">{tag}</span>
-        </h1>
+      {loading ? (
+        <p className="text-center text-gray-500">Loading...</p>
+      ) : posts.length === 0 ? (
+        <p className="text-center text-gray-500">No posts found.</p>
+      ) : (
+        posts.map((post) => (
+          <div key={post.id} className="bg-white p-4 mb-4 rounded shadow">
+            <h2 className="text-xl font-semibold">{post.title}</h2>
+            <p className="text-gray-700">{post.body}</p>
+          </div>
+        ))
+      )}
 
-        <div className="space-y-6">
-          {posts.map((post) => (
-            <div
-              key={post.id}
-              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
-            >
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                {post.title}
-              </h2>
-              <p className="text-gray-700 dark:text-gray-300">{post.body}</p>
-            </div>
-          ))}
-        </div>
+      <div className="flex justify-between items-center mt-6">
+        <button
+          onClick={() => updateParams({ page: String(page - 1) })}
+          disabled={page <= 1}
+          className={`px-4 py-2 rounded bg-indigo-500 text-white ${
+            page <= 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-indigo-600"
+          }`}
+        >
+          Previous
+        </button>
+
+        <span className="text-gray-600">
+          Page {page} of {totalPages}
+        </span>
+
+        <button
+          onClick={() => updateParams({ page: String(page + 1) })}
+          disabled={page >= totalPages}
+          className={`px-4 py-2 rounded bg-indigo-500 text-white ${
+            page >= totalPages
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:bg-indigo-600"
+          }`}
+        >
+          Next
+        </button>
       </div>
     </div>
   );

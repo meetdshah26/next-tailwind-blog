@@ -1,14 +1,18 @@
 [
   {
-    "id": "1",
+    "id": 1,
     "title": "First Post",
     "slug": "first-post",
-    "content": "This is the first post content."
+    "tags": ["tag1", "tag2"],
+    "userId": 1,
+    "body": "This is the first post content."
   },
   {
-    "id": "2",
+    "id": 2,
     "title": "Second Post",
+    "tags": ["tag1", "tag2"],
     "slug": "second-post",
-    "content": "This is the second post content."
+    "userId": 2,
+    "body": "This is the second post content."
   }
 ]

@@ -1,5 +1,5 @@
 // hooks/usePaginatedPosts.ts
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export interface Post {
@@ -34,7 +34,7 @@ export const usePaginatedPosts = ({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const page = parseInt(searchParams.get("page") || "1");
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const sortBy = searchParams.get("sortBy") || "";
   const order = searchParams.get("order") || "asc";
   const query = searchParams.get("q") || "";
@@ -48,7 +48,7 @@ export const usePaginatedPosts = ({
     async function fetchData() {
       setLoading(true);
       try {
-        let url = `${baseUrl}${queryPath}?limit=${limit}&skip=${skip}`;
+        const url = `${baseUrl}${queryPath}?limit=${limit}&skip=${skip}`;
         const res = await fetch(url);
         const data = await res.json();
         let fetchedPosts = data.posts || [];
@@ -60,25 +60,28 @@ export const usePaginatedPosts = ({
               ?.toLowerCase()
               .includes(query.toLowerCase())
           );
+          setTotal(fetchedPosts.length); // Override total with filtered count
+        } else {
+          setTotal(data.total || fetchedPosts.length);
         }
 
         // Optional client-side sorting
-        // if (isSortLocal && sortBy) {
-        //   fetchedPosts.sort((a, b) => {
-        //     const valA = a[sortBy as keyof Post];
-        //     const valB = b[sortBy as keyof Post];
+        if (isSortLocal && sortBy) {
+          fetchedPosts.sort((a: Post, b: Post) => {
+            const valA = a[sortBy as keyof Post];
+            const valB = b[sortBy as keyof Post];
 
-        //     if (typeof valA === "string" && typeof valB === "string") {
-        //       return order === "asc"
-        //         ? valA.localeCompare(valB)
-        //         : valB.localeCompare(valA);
-        //     } else if (typeof valA === "number" && typeof valB === "number") {
-        //       return order === "asc" ? valA - valB : valB - valA;
-        //     } else {
-        //       return 0;
-        //     }
-        //   });
-        // }
+            if (typeof valA === "string" && typeof valB === "string") {
+              return order === "asc"
+                ? valA.localeCompare(valB)
+                : valB.localeCompare(valA);
+            } else if (typeof valA === "number" && typeof valB === "number") {
+              return order === "asc" ? valA - valB : valB - valA;
+            }
+
+            return 0;
+          });
+        }
 
         setPosts(fetchedPosts);
         setTotal(data.total || fetchedPosts.length);
@@ -93,13 +96,16 @@ export const usePaginatedPosts = ({
     fetchData();
   }, [page, sortBy, order, query, tag]);
 
-  const updateParams = (params: Partial<Record<string, string>>) => {
-    const newParams = new URLSearchParams(searchParams.toString());
-    Object.entries(params).forEach(([key, value]) =>
-      value ? newParams.set(key, value) : newParams.delete(key)
-    );
-    router.push(`?${newParams.toString()}`);
-  };
+  const updateParams = useCallback(
+    (params: Partial<Record<string, string>>) => {
+      const newParams = new URLSearchParams(searchParams.toString());
+      Object.entries(params).forEach(([key, value]) =>
+        value ? newParams.set(key, value) : newParams.delete(key)
+      );
+      router.push(`?${newParams.toString()}`);
+    },
+    [searchParams, router]
+  );
 
   return {
     posts,

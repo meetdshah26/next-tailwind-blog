@@ -1,14 +1,18 @@
-'use client';
-//  Example of a blog detail page using client-side rendering 
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+
+type Post = {
+  title: string;
+  content: string;
+};
 
 const BlogDetailPage = () => {
   const { id } = useParams();
-  const [post, setPost] = useState(null);
+  const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -17,11 +21,13 @@ const BlogDetailPage = () => {
 
       try {
         const response = await fetch(`https://api.example.com/posts/${id}`);
-        if (!response.ok) throw new Error('Failed to fetch data');
+        if (!response.ok) throw new Error("Failed to fetch data");
         const data = await response.json();
         setPost(data);
       } catch (error) {
-        setError('Failed to load the post');
+        console.log(error);
+        
+        // setError('Failed to load the post');
       } finally {
         setLoading(false);
       }

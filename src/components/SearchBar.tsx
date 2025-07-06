@@ -80,11 +80,17 @@ const SearchBar = ({ onSearch, initialQuery = "", loading = false }: Props) => {
   };
 
   return (
-    <div ref={wrapperRef} className="relative w-full max-w-xl mx-auto mb-6">
+    <div
+      ref={wrapperRef}
+      className="relative w-full max-w-xl mx-auto mb-6 mt-3"
+    >
       <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
         <FiSearch size={20} />
       </div>
 
+      <label htmlFor="search" className="sr-only">
+        Search
+      </label>
       <input
         type="text"
         value={searchQuery}
@@ -111,7 +117,7 @@ const SearchBar = ({ onSearch, initialQuery = "", loading = false }: Props) => {
 
       {/* Dropdown history */}
       {showHistory && history.length > 0 && (
-        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-52 overflow-y-auto">
           {history.map((item, idx) => (
             <button
               key={idx}
@@ -124,7 +130,7 @@ const SearchBar = ({ onSearch, initialQuery = "", loading = false }: Props) => {
           ))}
           <button
             onClick={handleClearHistory}
-            className="w-full text-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-t"
+            className="w-full text-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-200"
           >
             Clear Search History
           </button>
