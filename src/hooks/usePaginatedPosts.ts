@@ -84,7 +84,9 @@ export const usePaginatedPosts = ({
         }
 
         setPosts(fetchedPosts);
-        setTotal(data.total || fetchedPosts.length);
+        if (!(isSearchLocal && query)) {
+          setTotal(data.total || fetchedPosts.length);
+        }
       } catch (err) {
         console.error("Error loading posts", err);
         setPosts([]);

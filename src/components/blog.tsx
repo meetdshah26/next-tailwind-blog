@@ -40,7 +40,7 @@ const Blog = () => {
   const toggleComments = async (postId: number) => {
     const isVisible = visibleComments[postId]; // Get current state of comment
     setVisibleComments((prev) => ({
-      // ...prev,
+      ...prev,
       [postId]: !isVisible,
     })); // Toggle visibility
 
@@ -151,9 +151,9 @@ const Blog = () => {
           <p className="text-center text-xl text-gray-600">No posts found</p>
         )}
 
-        {filteredPosts.map((post, i) => (
+        {filteredPosts.map((post) => (
           <div
-            key={i}
+            key={post.id}
             className="p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
           >
             <Link href={`/blog/${post.id}`} className="block">

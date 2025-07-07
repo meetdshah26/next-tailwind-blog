@@ -8,7 +8,11 @@ const BackButton = () => {
   const router = useRouter();
 
   return (
-    <button onClick={() => router.back()} className='hover:cursor-pointer'>
+    <button
+      onClick={() => router.back()}
+      className='hover:cursor-pointer'
+      aria-label="Go back"
+    >
       <IoArrowBack size={24} />
     </button>
   );

@@ -9,7 +9,7 @@ export const blogSchema = z.object({
   tags: z
     .string()
     .optional()
-    .transform((val) => val?.split(",").map((t) => t.trim()) ?? []),
+    .transform((val) => val ? val.split(",").map((t) => t.trim()) : []),
 });
 
 export type BlogSchemaType = z.infer<typeof blogSchema>;

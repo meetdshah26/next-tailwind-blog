@@ -92,6 +92,7 @@ const SearchBar = ({ onSearch, initialQuery = "", loading = false }: Props) => {
         Search
       </label>
       <input
+        id="search"
         type="text"
         value={searchQuery}
         onChange={handleChange}
