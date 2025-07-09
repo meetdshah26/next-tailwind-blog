@@ -4,6 +4,7 @@ import { usePaginatedPosts } from "../../../hooks/usePaginatedPosts";
 import SearchBar from "../../../components/SearchBar";
 import { useDebouncedCallback } from "use-debounce";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 export default function TagDetailPage() {
   const params = useParams();
@@ -65,10 +66,10 @@ export default function TagDetailPage() {
         <p className="text-center text-gray-500">No posts found.</p>
       ) : (
         posts.map((post) => (
-          <div key={post.id} className="bg-white p-4 mb-4 rounded shadow">
+          <Link key={post.id} href={`/blog/${post.id}`} className="block bg-white p-4 mb-4 rounded shadow hover:bg-gray-100 transition">
             <h2 className="text-xl font-semibold">{post.title}</h2>
             <p className="text-gray-700">{post.body}</p>
-          </div>
+          </Link>
         ))
       )}
 
